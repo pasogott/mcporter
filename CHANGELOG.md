@@ -1,5 +1,7 @@
 # mcporter Changelog
 
+## [0.13.12] - Unreleased
+
 ## [0.13.11] - 2026-09-11
 
 **Highlights:** OpenClaw relay cold starts get enough time and clear discovery errors, while plain Chrome launches work again for CLI generation and tool discovery.
