@@ -57,8 +57,8 @@ export async function createIsolatedTestHome(prefix: string): Promise<IsolatedTe
         homedirSpy.mockRestore();
         process.env = { ...originalEnv };
         await Promise.all([
-          fs.rm(homeDir, { recursive: true, force: true }),
-          fs.rm(ambientRoot, { recursive: true, force: true }),
+          fs.rm(homeDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }),
+          fs.rm(ambientRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }),
         ]);
       }
     },
