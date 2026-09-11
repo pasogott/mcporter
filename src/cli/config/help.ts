@@ -125,7 +125,8 @@ export const CONFIG_HELP_ENTRIES: Record<ConfigSubcommand, ConfigHelpEntry> = {
     name: 'logout <name>',
     summary: 'Clear cached credentials',
     usage: 'mcporter config logout <name>',
-    description: 'Deletes the token cache directory for an OAuth-enabled server.',
+    description:
+      'Removes recognized OAuth credential files for a server. The token cache directory and unrelated files stay.',
     examples: ['pnpm mcporter config logout linear'],
   },
   doctor: {

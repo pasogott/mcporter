@@ -124,7 +124,7 @@ Use `--scope home|project` with `mcporter config add` to pick the write target e
 - `--no-browser` suppresses automatic browser launch and prints the authorization URL to stdout so it can be copied from a headless host. `--browser none` is accepted as a compatibility alias, and `MCPORTER_OAUTH_NO_BROWSER=1` / `true` / `yes` enables the same behavior by environment.
 - In `--json --no-browser` mode, stdout contains a JSON object with `authorizationUrl` and `redirectUrl`; diagnostics stay off stdout so scripts can parse the result. Treat emitted authorization URLs as sensitive operational output.
 - A configured server name is an OAuth trust boundary. Changing its URL clears cached tokens, dynamic client registration, PKCE verifier, and callback state from the shared vault and any `tokenCacheDir`; changing the URL back does not restore the old credentials, so re-authentication is required.
-- `logout` wipes the shared vault entry, legacy `~/.mcporter/<name>/` caches, and the custom `tokenCacheDir` when present. Pass `--all` to clear everything.
+- `logout` removes the shared vault entry, legacy `~/.mcporter/<name>/` credential files, and recognized files in `tokenCacheDir` when present (`tokens.json`, client registration, PKCE/state). The cache directory and unrelated files stay.
 
 ### `mcporter config doctor`
 

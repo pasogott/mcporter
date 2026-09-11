@@ -183,9 +183,10 @@ describe('mcporter config CLI', () => {
       'utf8'
     );
     await fs.mkdir(tokenDir, { recursive: true });
-    await fs.writeFile(path.join(tokenDir, 'token.json'), '{}', 'utf8');
+    await fs.writeFile(path.join(tokenDir, 'tokens.json'), '{}', 'utf8');
     await handleConfigCli(buildOptions({ configPath }), ['logout', 'linear']);
-    await expect(fs.access(tokenDir)).rejects.toThrow();
+    await expect(fs.access(path.join(tokenDir, 'tokens.json'))).rejects.toThrow();
+    await expect(fs.stat(tokenDir).then((stat) => stat.isDirectory())).resolves.toBe(true);
   });
 
   it('reports a clean config via doctor', async () => {

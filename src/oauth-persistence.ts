@@ -1,4 +1,3 @@
-import fs from 'node:fs/promises';
 import type {
   OAuthClientInformationMixed,
   OAuthDiscoveryState,
@@ -65,11 +64,9 @@ export async function clearOAuthCaches(
   scope: OAuthClearScope = 'all'
 ): Promise<void> {
   const persistence = await buildOAuthPersistence(definition, logger);
+  // tokenCacheDir is user-influenced (config import; normalizePath only expands ~).
+  // DirectoryPersistence.clear already unlinks known credential filenames.
   await persistence.clear(scope);
-
-  if (definition.tokenCacheDir && scope === 'all') {
-    await fs.rm(definition.tokenCacheDir, { recursive: true, force: true });
-  }
 
   await clearLegacyOAuthArtifacts(definition, logger, scope);
 }
