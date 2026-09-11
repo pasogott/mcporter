@@ -1,6 +1,6 @@
 # mcporter Changelog
 
-## [0.13.12] - Unreleased
+## [0.13.12] - 2026-09-11
 
 **Highlights:** OAuth logout preserves unrelated files, and generated CLIs and typed clients keep unusual tool names callable and distinct.
 
