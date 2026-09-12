@@ -647,10 +647,7 @@ export class RuntimeConnectionCache {
 
   private async enterConnectionSetup(server: string): Promise<() => void> {
     const previous = this.connectionSetupTails.get(server) ?? Promise.resolve();
-    let releaseCurrent!: () => void;
-    const current = new Promise<void>((resolve) => {
-      releaseCurrent = resolve;
-    });
+    const { promise: current, resolve: releaseCurrent } = Promise.withResolvers<void>();
     const tail = previous.catch(() => {}).then(() => current);
     this.connectionSetupTails.set(server, tail);
     await previous.catch(() => {});

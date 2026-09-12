@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { setTimeout as delay } from 'node:timers/promises';
 import type { Transport } from '@modelcontextprotocol/client';
 import type { Logger } from './logging.js';
 
@@ -256,8 +257,4 @@ async function waitForTreeExit(pids: number[], durationMs: number): Promise<bool
     const remaining = Math.max(10, Math.min(100, deadline - Date.now()));
     await delay(remaining);
   }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

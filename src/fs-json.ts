@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { constants } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { isProcessRunning } from './process-utils.js';
 
 const DEFAULT_LOCK_TIMEOUT_MS = 30_000;
@@ -135,16 +136,9 @@ function isPermissionError(error: unknown): boolean {
   return code === 'EACCES' || code === 'EPERM';
 }
 
-async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function withLocalLock<T>(key: string, timeoutMs: number, task: () => Promise<T>): Promise<T> {
   const previous = localLockTails.get(key) ?? Promise.resolve();
-  let release!: () => void;
-  const current = new Promise<void>((resolve) => {
-    release = resolve;
-  });
+  const { promise: current, resolve: release } = Promise.withResolvers<void>();
   const tail = previous.then(() => current);
   localLockTails.set(key, tail);
   try {

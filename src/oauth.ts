@@ -99,23 +99,6 @@ export class OAuthRedirectUriMismatchError extends Error {
   }
 }
 
-interface Deferred<T> {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (reason?: unknown) => void;
-}
-
-// createDeferred produces a minimal promise wrapper for async coordination.
-function createDeferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-
 // openExternal attempts to launch the system browser cross-platform.
 function openExternal(url: string, platform: NodeJS.Platform = process.platform, launch: typeof spawn = spawn) {
   const stdio = 'ignore';
@@ -149,13 +132,14 @@ function openExternal(url: string, platform: NodeJS.Platform = process.platform,
   }
 }
 
-// PersistentOAuthClientProvider persists OAuth session artifacts to disk and captures callback redirects.
+type AuthorizationDeferred = ReturnType<typeof Promise.withResolvers<OAuthAuthorizationResponse>>;
+
 class PersistentOAuthClientProvider implements OAuthClientProvider {
   private readonly metadata: OAuthClientMetadata;
   private readonly logger: OAuthLogger;
   private readonly persistence: OAuthPersistence;
   private redirectUrlValue: URL;
-  private authorizationDeferred: Deferred<OAuthAuthorizationResponse> | null = null;
+  private authorizationDeferred: AuthorizationDeferred | null = null;
   private authorizationRedirectStarted = false;
   // One interactive authorization transaction per provider: concurrent SDK auth() flows
   // (background GET reconnect + bridged POST both hitting 401) must not each open a
@@ -594,11 +578,8 @@ class PersistentOAuthClientProvider implements OAuthClientProvider {
     });
   }
 
-  private ensureAuthorizationDeferred(): Deferred<OAuthAuthorizationResponse> {
-    if (!this.authorizationDeferred) {
-      this.authorizationDeferred = createDeferred<OAuthAuthorizationResponse>();
-    }
-    return this.authorizationDeferred;
+  private ensureAuthorizationDeferred(): AuthorizationDeferred {
+    return (this.authorizationDeferred ??= Promise.withResolvers<OAuthAuthorizationResponse>());
   }
 
   private hasActiveInteractiveAuthorization(): boolean {

@@ -101,10 +101,7 @@ function trackStandaloneSseFetch(fetchOverride: FetchLike | undefined): {
   fetch: FetchLike;
   started: Promise<void>;
 } {
-  let markStarted!: () => void;
-  const started = new Promise<void>((resolve) => {
-    markStarted = resolve;
-  });
+  const { promise: started, resolve: markStarted } = Promise.withResolvers<void>();
   const baseFetch: FetchLike = fetchOverride ?? ((input, init) => fetch(input, init));
   return {
     started,
