@@ -16,7 +16,6 @@ import {
   buildAuthCommandHint,
   buildJsonListEntry,
   createEmptyStatusCounts,
-  createUnknownResult,
   type ListJsonServerEntry,
   printBriefTool,
   printSingleServerHeader,
@@ -56,7 +55,10 @@ export async function handleList(runtime: Runtime, args: string[]): Promise<void
     try {
       const servers = runtime.getDefinitions();
       const perServerTimeoutMs = resolveListTimeout(flags.timeoutMs);
-      const serverTimeouts = servers.map((server) => resolveListTimeout(flags.timeoutMs, server));
+      const serverChecks = servers.map((server) => ({
+        server,
+        timeoutMs: resolveListTimeout(flags.timeoutMs, server),
+      }));
       const perServerTimeoutSeconds = Math.round(perServerTimeoutMs / 1000);
 
       if (servers.length === 0) {
@@ -78,31 +80,20 @@ export async function handleList(runtime: Runtime, args: string[]): Promise<void
 
       if (!flags.quiet && flags.format === 'text') {
         console.log(
-          `mcporter ${MCPORTER_VERSION} — Listing ${servers.length} server(s) (per-server timeout: ${perServerTimeoutSeconds}s${serverTimeouts.some((timeout) => timeout !== perServerTimeoutMs) ? `; Chrome auto-connect: ${Math.max(...serverTimeouts) / 1000}s` : ''})`
+          `mcporter ${MCPORTER_VERSION} — Listing ${servers.length} server(s) (per-server timeout: ${perServerTimeoutSeconds}s${serverChecks.some(({ timeoutMs }) => timeoutMs !== perServerTimeoutMs) ? `; Chrome auto-connect: ${Math.max(...serverChecks.map(({ timeoutMs }) => timeoutMs)) / 1000}s` : ''})`
         );
       }
       const spinner =
         !flags.quiet && flags.format === 'text' && supportsSpinner
           ? ora(`Discovering ${servers.length} server(s)…`).start()
           : undefined;
-      const renderedResults =
-        !flags.quiet && flags.format === 'text'
-          ? (Array.from({ length: servers.length }, () => undefined) as Array<
-              ReturnType<typeof renderServerListRow> | undefined
-            >)
-          : undefined;
-      const summaryResults: Array<ListSummaryResult | undefined> = Array.from(
-        { length: servers.length },
-        () => undefined
-      );
+      const renderResults = !flags.quiet && flags.format === 'text';
       let completedCount = 0;
 
-      const tasks = servers.map((server, index) =>
-        checkListServer(runtime, server, serverTimeouts[index]!, flags.disableOAuth).then((result) => {
-          summaryResults[index] = result;
-          if (renderedResults) {
-            const rendered = renderServerListRow(result, serverTimeouts[index]!, { verbose: flags.verbose });
-            renderedResults[index] = rendered;
+      const tasks = serverChecks.map(({ server, timeoutMs }) =>
+        checkListServer(runtime, server, timeoutMs, flags.disableOAuth).then((result) => {
+          if (renderResults) {
+            const rendered = renderServerListRow(result, timeoutMs, { verbose: flags.verbose });
             completedCount += 1;
             if (spinner) {
               spinner.stop();
@@ -116,23 +107,18 @@ export async function handleList(runtime: Runtime, args: string[]): Promise<void
               console.log(rendered.line);
             }
           }
-          return result;
+          return { result, timeoutMs };
         })
       );
 
-      await Promise.all(tasks);
-      const jsonEntries = summaryResults.map((entry, index) => {
-        const serverDefinition = servers[index] ?? entry?.server ?? servers[0];
-        if (!serverDefinition) {
-          throw new Error('Unable to resolve server definition for JSON output.');
-        }
-        const normalizedEntry = entry ?? createUnknownResult(serverDefinition);
-        return buildJsonListEntry(normalizedEntry, Math.round(serverTimeouts[index]! / 1000), {
+      const results = await Promise.all(tasks);
+      const jsonEntries = results.map(({ result, timeoutMs }) =>
+        buildJsonListEntry(result, Math.round(timeoutMs / 1000), {
           includeSchemas: Boolean(flags.schema),
           includeSources: Boolean(flags.verbose || flags.includeSources),
           includeConnectionInfo: flags.verbose,
-        });
-      });
+        })
+      );
       const counts = summarizeStatusCounts(jsonEntries);
       maybeSetListExitCode(jsonEntries, flags);
 

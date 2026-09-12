@@ -35,6 +35,48 @@ function createRuntime(): Runtime {
 }
 
 describe('handleList JSON output', () => {
+  it.each(['text', 'json'])('preserves %s ordering when servers finish out of order', async (format) => {
+    const runtime = createRuntime();
+    const firstServer = Promise.withResolvers<Array<{ name: string }>>();
+    runtime.listTools = vi.fn((name) =>
+      name === 'healthy' ? firstServer.promise : Promise.resolve([{ name: 'fast_tool' }])
+    );
+    const getConnectionInfo = vi.fn().mockResolvedValue(undefined);
+    runtime.getConnectionInfo = getConnectionInfo;
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const listing = runHandleList(runtime, format === 'json' ? ['--json'] : []);
+
+    try {
+      await vi.waitFor(() => expect(getConnectionInfo).toHaveBeenCalledWith('auth-server'));
+      if (format === 'text') {
+        expect(logSpy.mock.calls.some(([line]) => String(line).startsWith('- auth-server'))).toBe(true);
+        expect(logSpy.mock.calls.some(([line]) => String(line).startsWith('- healthy'))).toBe(false);
+      } else {
+        expect(logSpy).not.toHaveBeenCalled();
+      }
+      firstServer.resolve([{ name: 'slow_tool' }]);
+      await listing;
+
+      if (format === 'json') {
+        const payload = JSON.parse(logSpy.mock.calls.at(-1)?.[0] ?? '{}');
+        expect(payload.servers.map((entry: { name: string }) => entry.name)).toEqual(['healthy', 'auth-server']);
+        expect(payload.servers.map((entry: { tools: Array<{ name: string }> }) => entry.tools[0]?.name)).toEqual([
+          'slow_tool',
+          'fast_tool',
+        ]);
+      } else {
+        const rows = logSpy.mock.calls.map(([line]) => String(line)).filter((line) => line.startsWith('- '));
+        expect(rows).toHaveLength(2);
+        expect(rows[0]).toMatch(/^- auth-server/);
+        expect(rows[1]).toMatch(/^- healthy/);
+      }
+    } finally {
+      firstServer.resolve([]);
+      await listing;
+      logSpy.mockRestore();
+    }
+  });
+
   it('emits aggregated status counts', async () => {
     const runtime = createRuntime();
     const previousExitCode = process.exitCode;

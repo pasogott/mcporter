@@ -223,15 +223,6 @@ export function buildJsonListEntry(
   };
 }
 
-export function createUnknownResult(server: ServerDefinition): ListSummaryResult {
-  return {
-    status: 'error',
-    server,
-    error: new Error('Unknown server result'),
-    durationMs: 0,
-  };
-}
-
 export function buildAuthCommandHint(definition: ServerDefinition): string {
   if (definition.source?.kind === 'local' && definition.source.path === '<adhoc>') {
     if (definition.command.kind === 'http') {
