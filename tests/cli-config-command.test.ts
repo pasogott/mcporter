@@ -196,10 +196,11 @@ describe('mcporter config CLI', () => {
     await handleConfigCli(buildOptions({ configPath }), ['doctor']);
     spy.mockRestore();
     expect(logs[0]).toBe(`MCPorter ${MCPORTER_VERSION}`);
-    expect(logs[1]).toMatch(/^Project config:/);
-    expect(logs[2]).toMatch(/^System config:/);
-    expect(logs[3]).toBe('');
-    expect(logs[4]).toBe('Config looks good.');
+    expect(logs[1]).toBe(`Selected config: ${configPath}`);
+    expect(logs[2]).toMatch(/^Project config:/);
+    expect(logs[3]).toMatch(/^System config:/);
+    expect(logs[4]).toBe('');
+    expect(logs[5]).toBe('Config looks good.');
   });
 
   it('prints config locations before doctor issues', async () => {
@@ -211,10 +212,11 @@ describe('mcporter config CLI', () => {
     absoluteSpy.mockRestore();
     spy.mockRestore();
     expect(logs[0]).toBe(`MCPorter ${MCPORTER_VERSION}`);
-    expect(logs[1]).toMatch(/^Project config:/);
-    expect(logs[2]).toMatch(/^System config:/);
-    expect(logs[4]).toBe('Config issues detected:');
-    expect(logs[5]).toMatch(/non-absolute working directory/);
+    expect(logs[1]).toBe(`Selected config: ${configPath}`);
+    expect(logs[2]).toMatch(/^Project config:/);
+    expect(logs[3]).toMatch(/^System config:/);
+    expect(logs[5]).toBe('Config issues detected:');
+    expect(logs[6]).toMatch(/non-absolute working directory/);
   });
 
   it('prints inline help for subcommands via --help', async () => {

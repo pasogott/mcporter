@@ -128,7 +128,7 @@ Use `--scope home|project` with `mcporter config add` to pick the write target e
 
 ### `mcporter config doctor`
 
-- Prints discovered config locations, validates loaded definitions, and reports non-absolute stdio working directories. It does not modify configuration or credentials.
+- Prints the selected `--config` / `MCPORTER_CONFIG` override when present alongside default config locations, validates loaded definitions, and reports non-absolute stdio working directories. It does not modify configuration or credentials.
 
 ## Ad-hoc & Persistence
 

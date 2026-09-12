@@ -3,6 +3,7 @@
 ## [0.13.13] - Unreleased
 
 - Preserve prototype-named CLI selectors and argument keys across named, JSON, function-call, and positional syntax instead of dropping values or treating them as flag handlers.
+- Show the selected `--config` or `MCPORTER_CONFIG` path in configuration diagnostics instead of reporting only default locations.
 - Refresh Zod, Hono, Node types, and Vite; pin GitHub Actions to verified releases and avoid duplicate CI builds while preserving Node 24 and the 48-hour dependency release-age policy.
 
 ## [0.13.12] - 2026-09-11

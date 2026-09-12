@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { LoadConfigOptions, RawConfig } from '../../config.js';
-import { loadRawConfig, resolveConfigPath } from '../../config.js';
+import { listConfigLayerPaths, loadRawConfig, resolveConfigPath } from '../../config.js';
 import type { ServerDefinition } from '../../config-schema.js';
 import { mcporterConfigCandidates } from '../../paths.js';
 import { CliUsageError } from '../errors.js';
@@ -11,6 +11,8 @@ import { dimText, supportsAnsiColor } from '../terminal.js';
 export const COLOR_ENABLED = (): boolean => Boolean(supportsAnsiColor && process.stdout.isTTY);
 
 export type ConfigLocationSummary = {
+  selectedPath?: string;
+  selectedExists?: boolean;
   projectPath: string;
   projectExists: boolean;
   systemPath: string;
@@ -41,11 +43,14 @@ export async function loadOrCreateConfig(loadOptions: LoadConfigOptions): Promis
 
 export async function resolveConfigLocations(loadOptions: LoadConfigOptions): Promise<ConfigLocationSummary> {
   const rootDir = loadOptions.rootDir ?? process.cwd();
+  const explicitPath = loadOptions.configPath ?? process.env.MCPORTER_CONFIG;
+  const selectedPath = explicitPath ? (await listConfigLayerPaths(loadOptions, rootDir))[0] : undefined;
   const projectPath = path.resolve(rootDir, 'config', 'mcporter.json');
   const projectExists = await pathExists(projectPath);
   const systemCandidates = buildSystemConfigCandidates();
   const systemResolved = await resolveFirstExisting(systemCandidates);
   return {
+    ...(selectedPath ? { selectedPath, selectedExists: await pathExists(selectedPath) } : {}),
     projectPath,
     projectExists,
     systemPath: systemResolved.path,
@@ -57,6 +62,9 @@ export function logConfigLocations(summary: ConfigLocationSummary, options?: { l
   const shouldAddNewline = options?.leadingNewline ?? true;
   if (shouldAddNewline) {
     console.log('');
+  }
+  if (summary.selectedPath) {
+    console.log(`Selected config: ${formatPath(summary.selectedPath, summary.selectedExists ?? false)}`);
   }
   console.log(`Project config: ${formatPath(summary.projectPath, summary.projectExists)}`);
   console.log(`System config: ${formatPath(summary.systemPath, summary.systemExists)}`);

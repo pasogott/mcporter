@@ -17,9 +17,27 @@ beforeEach(async () => {
 afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe('config doctor', () => {
+  it.each(['flag', 'environment'])('reports the selected %s config path', async (source) => {
+    const configPath = path.join(tempDir, 'custom.json');
+    await fs.writeFile(configPath, '{"mcpServers":{},"imports":[]}');
+    if (source === 'flag') {
+      loadOptions = { ...loadOptions, configPath };
+      vi.stubEnv('MCPORTER_CONFIG', path.join(tempDir, 'overridden.json'));
+    } else {
+      vi.stubEnv('MCPORTER_CONFIG', configPath);
+    }
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await handleDoctorCommand({ loadOptions } as never, []);
+    const lines = logSpy.mock.calls.flat().join('\n');
+    expect(lines).toContain(`Selected config: ${configPath}`);
+    expect(lines).not.toContain(`Selected config: ${configPath} (missing)`);
+    expect(lines).toContain('Config looks good.');
+  });
+
   it('reports issues for stdio cwd and missing oauth token cache', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(configModule, 'loadServerDefinitions').mockResolvedValue([
