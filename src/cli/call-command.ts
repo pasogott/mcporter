@@ -511,21 +511,16 @@ async function hydratePositionalArguments(
   }
   // Respect whichever parameters the user already supplied by name so positional values only
   // populate the fields that are still unset.
-  const remaining = options.filter((option) => !(option.property in namedArgs));
+  const remaining = options.filter((option) => !Object.hasOwn(namedArgs, option.property));
   if (positionalArgs.length > remaining.length) {
     throw new Error(
       `Too many positional arguments (${positionalArgs.length}) supplied; only ${remaining.length} parameter${remaining.length === 1 ? '' : 's'} remain on ${tool}.`
     );
   }
-  const hydrated: Record<string, unknown> = { ...namedArgs };
-  positionalArgs.forEach((value, index) => {
-    const target = remaining[index];
-    if (!target) {
-      return;
-    }
-    hydrated[target.property] = value;
-  });
-  return hydrated;
+  return Object.fromEntries([
+    ...Object.entries(namedArgs),
+    ...remaining.slice(0, positionalArgs.length).map((option, index) => [option.property, positionalArgs[index]]),
+  ]);
 }
 
 type ToolResolution = IdentifierResolution;

@@ -5,6 +5,31 @@ process.env.MCPORTER_DISABLE_AUTORUN = '1';
 const cliModulePromise = import('../src/cli.js');
 
 describe('CLI call argument parsing', () => {
+  it.each(['__proto__', 'constructor', 'toString'])('treats %s as a literal selector, tool, or value', async (key) => {
+    const { parseCallArguments } = await cliModulePromise;
+    expect(parseCallArguments([key, 'echo']).selector).toBe(key);
+    expect(parseCallArguments(['demo', key]).tool).toBe(key);
+    expect(parseCallArguments(['demo', 'echo', key]).positionalArgs).toEqual([key]);
+  });
+
+  it.each([
+    ['demo.echo', '__proto__=value'],
+    ['demo.echo', '--__proto__', 'value'],
+    ['demo.echo', '--args', '{"__proto__":"value"}'],
+    ['demo.echo', '--params', '{"__proto__":"value"}'],
+    ['demo.echo(__proto__: "value")'],
+  ])('preserves prototype-named arguments in %j', async (...args) => {
+    const { parseCallArguments } = await cliModulePromise;
+    const parsed = parseCallArguments(args);
+    expect(parsed.args).toStrictEqual({ ['__proto__']: 'value' });
+  });
+
+  it('preserves nested data keys in function-call objects', async () => {
+    const { parseCallArguments } = await cliModulePromise;
+    const parsed = parseCallArguments(['demo.echo(data: {__proto__: {marker: "value"}})']);
+    expect(parsed.args).toStrictEqual({ data: { ['__proto__']: { marker: 'value' } } });
+  });
+
   it('treats quoted stdio commands as ad-hoc servers without --stdio', async () => {
     const { parseCallArguments } = await cliModulePromise;
     const parsed = parseCallArguments(['npx -y vercel-domains-mcp', 'domain=answeroverflow.com']);

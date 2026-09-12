@@ -6,6 +6,46 @@ process.env.MCPORTER_DISABLE_AUTORUN = '1';
 const cliModulePromise = import('../src/cli.js');
 
 describe('CLI call execution behavior', () => {
+  it('maps positional values to prototype-named schema fields', async () => {
+    const { handleCall } = await cliModulePromise;
+    const keys = ['__proto__', 'constructor', 'toString'];
+    const { runtime, callTool } = createRuntimeStub({
+      demo: [
+        {
+          name: 'echo',
+          inputSchema: { type: 'object', properties: Object.fromEntries(keys.map((key) => [key, { type: 'string' }])) },
+        },
+      ],
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await handleCall(runtime, ['demo.echo("proto", "ctor", "string")']);
+      const args = callTool.mock.calls[0]?.[2]?.args;
+      expect(JSON.parse(JSON.stringify(args))).toEqual({
+        ['__proto__']: 'proto',
+        constructor: 'ctor',
+        toString: 'string',
+      });
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('coerces prototype-named numeric flags using the declared string schema', async () => {
+    const { handleCall } = await cliModulePromise;
+    const { runtime, callTool } = createRuntimeStub({
+      demo: [{ name: 'echo', inputSchema: { type: 'object', properties: { ['__proto__']: { type: 'string' } } } }],
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await handleCall(runtime, ['demo.echo', '--__proto__', '123']);
+      const args = callTool.mock.calls[0]?.[2]?.args;
+      expect(JSON.parse(JSON.stringify(args))).toEqual({ ['__proto__']: '123' });
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
   it('auto-selects the sole tool when omitted', async () => {
     const toolName = 'list_issues';
     const { handleCall } = await cliModulePromise;

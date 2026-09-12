@@ -60,24 +60,28 @@ interface CallExpressionResolution {
   callExpressionProvidedTool: boolean;
 }
 
-const FLAG_HANDLERS: Record<string, FlagHandler> = {
-  '--server': handleServerFlag,
-  '--mcp': handleServerFlag,
-  '--tool': handleToolFlag,
-  '--timeout': handleTimeoutFlag,
-  '--tail-log': handleTailLogFlag,
-  '--no-oauth': handleDisableOAuthFlag,
-  '--save-images': handleSaveImagesFlag,
-  '--yes': handleNoopFlag,
-  '--raw-strings': handleRawStringsFlag,
-  '--no-coerce': handleNoCoerceFlag,
-  '--args': handleArgsFlag,
-  '--params': handleParamsFlag,
-  '--json': handleJsonArgsFlag,
-};
+const FLAG_HANDLERS = new Map<string, FlagHandler>([
+  ['--server', handleServerFlag],
+  ['--mcp', handleServerFlag],
+  ['--tool', handleToolFlag],
+  ['--timeout', handleTimeoutFlag],
+  ['--tail-log', handleTailLogFlag],
+  ['--no-oauth', handleDisableOAuthFlag],
+  ['--save-images', handleSaveImagesFlag],
+  ['--yes', handleNoopFlag],
+  ['--raw-strings', handleRawStringsFlag],
+  ['--no-coerce', handleNoCoerceFlag],
+  ['--args', handleArgsFlag],
+  ['--params', handleParamsFlag],
+  ['--json', handleJsonArgsFlag],
+]);
 
 export function parseCallArguments(args: string[]): CallArgsParseResult {
-  const result: CallArgsParseResult = { args: {}, tailLog: false, output: 'auto' };
+  const result: CallArgsParseResult = {
+    args: Object.create(null) as Record<string, unknown>,
+    tailLog: false,
+    output: 'auto',
+  };
   const flagState: FlagParseState = { coercionMode: 'default' };
   const ephemeral = extractEphemeralServerFlags(args);
   result.ephemeral = ephemeral;
@@ -89,6 +93,8 @@ export function parseCallArguments(args: string[]): CallArgsParseResult {
   resolveSelectorAndTool(positional, result, callExpressionProvidedServer, callExpressionProvidedTool);
   applyTrailingArguments(positional, result, flagState);
   appendLiteralPositionalArguments(literalPositional, result, flagState);
+  // Replay compares against ordinary JSON records, including their prototypes.
+  result.args = { ...result.args };
   return result;
 }
 
@@ -106,7 +112,7 @@ function scanCallTokens(args: string[], result: CallArgsParseResult, state: Flag
       literalPositional.push(...args.slice(index + 1).filter(Boolean));
       break;
     }
-    const flagHandler = FLAG_HANDLERS[token];
+    const flagHandler = FLAG_HANDLERS.get(token);
     if (flagHandler) {
       index = flagHandler({ args, index, result, state });
       continue;
@@ -216,7 +222,7 @@ function applyTrailingArguments(positional: string[], result: CallArgsParseResul
       continue;
     }
     if (state.coercionMode === 'default' && typeof value === 'number') {
-      result.schemaStringCoercionCandidates ??= {};
+      result.schemaStringCoercionCandidates ??= Object.create(null) as Record<string, string>;
       result.schemaStringCoercionCandidates[parsed.key] = schemaValue;
     }
     result.args[parsed.key] = value;
@@ -340,10 +346,10 @@ function handleNamedArgumentFlag(context: FlagHandlerContext): number {
       : body.slice(eqIndex + 1);
   const { value, schemaValue } = resolveNamedArgumentValue(rawValue, context.state.coercionMode);
   if (context.state.coercionMode === 'default' && typeof value === 'number') {
-    context.result.schemaStringCoercionCandidates ??= {};
+    context.result.schemaStringCoercionCandidates ??= Object.create(null) as Record<string, string>;
     context.result.schemaStringCoercionCandidates[key] = schemaValue;
   } else if (context.state.coercionMode === 'default' && typeof value === 'string') {
-    context.result.schemaArrayCoercionCandidates ??= {};
+    context.result.schemaArrayCoercionCandidates ??= Object.create(null) as Record<string, string>;
     context.result.schemaArrayCoercionCandidates[key] = schemaValue;
   }
   context.result.genericLongFlagArguments ??= [];

@@ -16,6 +16,8 @@ read_when:
 
 Both forms share the same validation pipeline, so required parameters, enums, and formats behave identically.
 
+`constructor` and `toString` are ordinary selector and argument names. Named `key=value`, JSON, and function-call arguments also preserve `__proto__`, including in nested objects. Schema-based flags and positional mapping still require fields available in the server metadata.
+
 ## Reading the CLI Signatures
 
 `mcporter list <server>` prints each tool as a compact TypeScript declaration:

@@ -103,7 +103,7 @@ function splitPrefix(prefix: string): { server?: string; tool: string } {
 }
 
 function extractObject(expression: ObjectExpression): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+  const entries: Array<[string, unknown]> = [];
   for (const property of expression.properties) {
     if (property.type !== 'Property') {
       throw new Error('Unsupported property type in call expression.');
@@ -120,9 +120,9 @@ function extractObject(expression: ObjectExpression): Record<string, unknown> {
       throw new Error(`Unsupported argument expression: ${rawValue ? rawValue.type : 'null'}.`);
     }
     const value = extractValue(rawValue);
-    result[key] = value;
+    entries.push([key, value]);
   }
-  return result;
+  return Object.fromEntries(entries);
 }
 
 function extractKey(property: Property): string {
