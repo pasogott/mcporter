@@ -6,7 +6,7 @@ read_when:
 
 # Migration Guide
 
-This guide walks through replacing the Python-based `pnpm mcp:*` helpers with the new TypeScript runtime and CLI.
+This guide covers replacing the older `pnpm mcp:*` helpers with the TypeScript runtime and CLI.
 
 ## 1. Install
 
@@ -24,12 +24,12 @@ npm install mcporter
 - Replace `pnpm mcporter:call <server>.<tool> key=value` with `npx mcporter call <server>.<tool> key=value`.
 - Add `--config <path>` if your configuration is not under `./config/mcporter.json`.
 - Optional: set `"imports"` inside `mcporter.json` (for example `[]` to disable auto-imports or `["cursor", "codex"]` to customize the order).
-- Append `--tail-log` to stream the last 20 lines of any log file returned by the tool.
+- Append `--tail-log` to print the last 20 lines of a log file returned by the tool.
 
 ## 3. OAuth Tokens
 
 - Tokens are saved in the shared vault under `~/.mcporter/credentials.json` by default, or `$XDG_DATA_HOME/mcporter/credentials.json` when `XDG_DATA_HOME` is set.
-- To force a fresh login, delete that directory and rerun the command; the CLI will relaunch the browser.
+- To force a fresh login for one server, run `mcporter auth <server> --reset`. This clears its recognized credentials without deleting unrelated files or other servers' vault entries.
 - Custom `token_cache_dir` entries in `mcporter.json` continue to work as explicit overrides.
 
 ## 4. Programmatic Usage
@@ -57,7 +57,7 @@ await callOnce({
 });
 ```
 
-Use `callOnce` for fire-and-forget invocations.
+Use `callOnce` for a single call with automatic connection cleanup.
 
 ## 6. Environment Variables
 

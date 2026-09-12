@@ -19,7 +19,7 @@ These tests hit real hosted MCP servers and require outbound HTTP. They are **of
 MCP_LIVE_TESTS=1 pnpm test:live
 ```
 
-This runs the Vitest suite under `tests/live`, in-band, with longer timeouts.
+This runs the Vitest suite under `tests/live` with its longer test timeouts.
 
 ## Current coverage
 

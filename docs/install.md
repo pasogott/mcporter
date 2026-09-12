@@ -52,7 +52,7 @@ mcporter --version
 mcporter list
 ```
 
-The first invocation will print every MCP server it discovered across your configs (Cursor, Claude Code/Desktop, Codex, Windsurf, OpenCode, VS Code). If nothing shows up, jump to [Configuration](config.md) to add a server.
+The `list` command prints every MCP server discovered across your configs (Cursor, Claude Code/Desktop, Codex, Windsurf, OpenCode, VS Code). If nothing shows up, jump to [Configuration](config.md) to add a server.
 
 ## Updating
 
@@ -67,4 +67,4 @@ The first invocation will print every MCP server it discovered across your confi
 - `brew uninstall steipete/tap/mcporter`
 - Standalone binary: delete the file you copied onto `$PATH`.
 
-mcporter stores OAuth tokens and cached schemas under `~/.mcporter/` (or `$XDG_CACHE_HOME/mcporter/` when set). Remove that directory if you want a fully clean slate.
+OAuth credentials use `~/.mcporter/credentials.json` or `$XDG_DATA_HOME/mcporter/credentials.json`; cached schemas use `~/.mcporter/<server>/` or `$XDG_CACHE_HOME/mcporter/<server>/`. Custom `tokenCacheDir` settings can place them elsewhere. Run `mcporter config logout <server>` to clear that server's credentials while preserving unrelated files. See [configuration paths](config.md#config-resolution-order) before removing any remaining config or cache files.

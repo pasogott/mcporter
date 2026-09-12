@@ -10,9 +10,9 @@ read_when:
 
 ## Notes
 
-- Generated CLI depends on the latest `commander` for argument parsing.
+- Generated CLIs use `commander` for argument parsing.
 - Default timeout for tool calls is 30 seconds, overridable via `--timeout`.
-- Runtime flag remains (`--runtime bun`) to tailor shebang/usage instructions, but Node.js is the default.
+- `--runtime node|bun` selects the generated runtime explicitly. When omitted, generation selects Bun if available, otherwise Node.js.
 - Generated CLI embeds the resolved server definition and always targets that snapshot (no external `--config` or `--server` overrides at runtime).
 - Schema property names become long flags: `QueryText` becomes `--query-text`, repeated separators collapse, and names made only of separators use `--option`. Collisions receive numeric suffixes in schema order, skipping both existing flags and Commander storage keys. Use the generated help to find the assigned spelling; calls retain the original JSON property names.
 - A schema flag such as `--no-cache` takes an explicit value and is not a negated Commander option. Nullable arrays keep their item types and enum choices.
@@ -26,7 +26,7 @@ npx mcporter generate-cli \
   --command https://mcp.context7.com/mcp \
   --minify
 
-# Provide explicit name/description and compile a Bun binary (falls back to Node if Bun missing)
+# Provide explicit name/description and compile a Bun binary (requires Bun)
 npx mcporter generate-cli \
   --name context7 \
   --command https://mcp.context7.com/mcp \

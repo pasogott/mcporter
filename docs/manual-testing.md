@@ -71,7 +71,7 @@ cat /tmp/auth-SERVER.log
 
 Expectations:
 
-- If a token cache exists, log should mention the cleared directory.
+- If credentials exist, reset clears the server's recognized credential files and vault entry while preserving unrelated files and the cache directory.
 - Failed auths emit the unified message (`Failed to authorize 'SERVER': ...`).
 
 For headless OAuth URL capture, run the same auth command with `--no-browser`:
