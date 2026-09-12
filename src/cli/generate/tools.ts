@@ -82,13 +82,12 @@ export function buildToolMetadataList(
 }
 
 export function buildEmbeddedSchemaMap(tools: ToolMetadata[]): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const entry of tools.toSorted((left, right) => left.tool.name.localeCompare(right.tool.name))) {
-    if (entry.tool.inputSchema && typeof entry.tool.inputSchema === 'object') {
-      result[entry.tool.name] = entry.tool.inputSchema;
-    }
-  }
-  return result;
+  return Object.fromEntries(
+    tools
+      .toSorted((left, right) => left.tool.name.localeCompare(right.tool.name))
+      .filter((entry) => entry.tool.inputSchema && typeof entry.tool.inputSchema === 'object')
+      .map((entry) => [entry.tool.name, entry.tool.inputSchema])
+  );
 }
 
 export function extractOptions(tool: ServerToolInfo): GeneratedOption[] {

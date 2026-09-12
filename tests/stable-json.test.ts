@@ -4,6 +4,11 @@ import { hashDaemonDefinitions } from '../src/daemon/definition-hash.js';
 import { stableJsonStringify } from '../src/stable-json.js';
 
 describe('stableJsonStringify', () => {
+  it('retains prototype-named keys while sorting nested JSON records', () => {
+    const value = JSON.parse('{"z":[{"__proto__":{"safe":true}}],"__proto__":{"x":1},"a":2}');
+    expect(stableJsonStringify(value)).toBe('{"__proto__":{"x":1},"a":2,"z":[{"__proto__":{"safe":true}}]}');
+  });
+
   it('sorts nested plain objects while preserving arrays and omitting undefined fields', () => {
     const nullPrototype = Object.create(null) as Record<string, unknown>;
     nullPrototype.z = 3;

@@ -123,7 +123,7 @@ ${imports}
 const __mcpScriptDir = path.dirname(fileURLToPath(import.meta.url));
 const __mcpRelativeStdioCwd: string | null = ${JSON.stringify(relativeStdioCwd)};
 const embeddedServer = ${embedded} as const;
-const embeddedSchemas = ${embeddedSchemas} as const;
+const embeddedSchemas = JSON.parse(${JSON.stringify(embeddedSchemas)}) as Record<string, unknown>;
 const embeddedName = ${JSON.stringify(serverName)};
 const embeddedDescription = ${JSON.stringify(
     definition.description ?? `Standalone CLI for the ${serverName} MCP server.`
@@ -512,7 +512,7 @@ ${aliasSnippet ? `\t${aliasSnippet}` : ''}\t.action(async (cmdOpts) => {
 \t\t\tinitialSchemas: embeddedSchemas,
 \t\t});
 \t\ttry {
-\t\t\tconst args = cmdOpts.raw ? JSON.parse(cmdOpts.raw) : ({} as Record<string, unknown>);
+\t\t\tconst args = cmdOpts.raw ? JSON.parse(cmdOpts.raw) : (Object.create(null) as Record<string, unknown>);
 \t\t\tif (!cmdOpts.raw) {
 \t\t\t\t${requiredValidation}
 \t\t\t\t${buildArgs}

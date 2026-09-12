@@ -45,6 +45,59 @@ function createMockRuntime(
 }
 
 describe('createServerProxy', () => {
+  it.each(['__proto__', 'constructor', 'toString'])('requires an own %s argument', async (key) => {
+    const schema = {
+      type: 'object',
+      properties: { [key]: { type: 'string' }, other: { type: 'string' } },
+      required: [key],
+    };
+    const runtime = createMockRuntime({ echo: schema });
+    const proxy = createServerProxy(runtime as unknown as Runtime, 'mock', {
+      cacheSchemas: false,
+    }) as unknown as Record<string, (...args: unknown[]) => Promise<CallResult>>;
+    await expect(proxy.echo!({ other: 'value' })).rejects.toThrow('Missing required arguments');
+    expect(runtime.callTool).not.toHaveBeenCalled();
+  });
+
+  it.each(['__proto__', 'constructor', 'toString', ''])(
+    'preserves %s in defaults and positional arguments',
+    async (key) => {
+      const schema = {
+        type: 'object',
+        properties: { [key]: { type: 'string', default: 'default-value' } },
+        required: [key],
+      };
+      const runtime = createMockRuntime({ echo: schema });
+      const proxy = createServerProxy(runtime as unknown as Runtime, 'mock', {
+        cacheSchemas: false,
+      }) as unknown as Record<string, (...args: unknown[]) => Promise<CallResult>>;
+      await proxy.echo!();
+      expect(runtime.callTool.mock.calls.at(-1)?.[2]?.args).toStrictEqual({ [key]: 'default-value' });
+      await proxy.echo!('positional-value');
+      expect(runtime.callTool.mock.calls.at(-1)?.[2]?.args).toStrictEqual({ [key]: 'positional-value' });
+      await proxy.echo!({ [key]: 'named-value' });
+      expect(runtime.callTool.mock.calls.at(-1)?.[2]?.args).toStrictEqual({ [key]: 'named-value' });
+    }
+  );
+
+  it('persists distinct exact tool names instead of overwriting mapped aliases', async () => {
+    const tokenCacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mcporter-exact-cache-'));
+    const schemas = Object.fromEntries(
+      ['foo-bar', 'fooBar'].map((name) => [name, { type: 'object', properties: { marker: { default: name } } }])
+    );
+    const runtime = createMockRuntime(schemas, undefined, { tokenCacheDir });
+    const proxy = createServerProxy(runtime as unknown as Runtime, 'mock', {
+      initialSchemas: schemas,
+    }) as unknown as Record<string, () => Promise<CallResult>>;
+    try {
+      await proxy['fooBar']!();
+      const snapshot = JSON.parse(await fs.readFile(path.join(tokenCacheDir, 'schema.json'), 'utf8'));
+      expect(snapshot.tools).toEqual(schemas);
+    } finally {
+      await fs.rm(tokenCacheDir, { recursive: true, force: true });
+    }
+  });
+
   it.each([false, true])('prefers exact names over loose aliases with initial schemas: %s', async (preload) => {
     const names = [
       '1password_get_item',

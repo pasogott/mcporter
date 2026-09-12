@@ -13,14 +13,14 @@ function sortJsonValue(value: unknown): unknown {
   if (!isPlainObject(value)) {
     return value;
   }
-  const result: Record<string, unknown> = {};
+  const entries: Array<[string, unknown]> = [];
   for (const key of Object.keys(value).toSorted()) {
     const entry = value[key];
     if (entry !== undefined) {
-      result[key] = sortJsonValue(entry);
+      entries.push([key, sortJsonValue(entry)]);
     }
   }
-  return result;
+  return Object.fromEntries(entries);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

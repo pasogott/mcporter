@@ -1,6 +1,9 @@
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { renderTemplate, templateTestHelpers } from '../src/cli/generate/template.js';
+import { buildToolMetadataList } from '../src/cli/generate/tools.js';
 import type { CliArtifactMetadata } from '../src/cli-metadata.js';
 import type { ServerDefinition } from '../src/config.js';
 
@@ -52,6 +55,30 @@ describe('computeRelativeStdioCwd', () => {
 });
 
 describe('renderTemplate', () => {
+  it('embeds schema keys as JSON data instead of object-literal prototype setters', () => {
+    const schema = { type: 'object', properties: { ['__proto__']: { type: 'string', default: 'value' } } };
+    const source = renderTemplate({
+      runtimeKind: 'node',
+      timeoutMs: 30_000,
+      definition: stdioDef(),
+      serverName: 'demo',
+      generator: { name: 'mcporter', version: 'test' },
+      metadata: metadataFor('demo'),
+      tools: buildToolMetadataList([{ name: '__proto__', inputSchema: schema }]),
+    });
+    const declaration = source.slice(source.indexOf('const embeddedSchemas ='), source.indexOf('const embeddedName ='));
+    const javascript = ts.transpileModule(declaration, {
+      compilerOptions: { target: ts.ScriptTarget.ES2023 },
+    }).outputText;
+    const schemas = runInNewContext(`${javascript}; embeddedSchemas`) as Record<
+      string,
+      { properties: Record<string, unknown> }
+    >;
+    expect(Object.hasOwn(schemas, '__proto__')).toBe(true);
+    expect(Object.hasOwn(schemas.__proto__!.properties, '__proto__')).toBe(true);
+    expect(JSON.parse(JSON.stringify(schemas))).toEqual({ ['__proto__']: schema });
+  });
+
   it('rejects sanitized command name collisions before emitting a broken CLI', () => {
     expect(() =>
       renderTemplate({

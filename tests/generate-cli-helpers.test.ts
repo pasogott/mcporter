@@ -3,6 +3,7 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
   buildExampleValue,
+  buildEmbeddedSchemaMap,
   buildFallbackLiteral,
   buildPlaceholder,
   buildToolMetadata,
@@ -22,6 +23,12 @@ import { renderToolCommand } from '../src/cli/generate/template.js';
 import type { ServerToolInfo } from '../src/runtime.js';
 
 describe('generate helpers', () => {
+  it('retains prototype-named tools in the embedded schema map', () => {
+    const schema = { type: 'object', properties: { ['__proto__']: { type: 'string' } } };
+    const tools = buildToolMetadataList([{ name: '__proto__', inputSchema: schema }]);
+    expect(buildEmbeddedSchemaMap(tools)).toStrictEqual({ ['__proto__']: schema });
+  });
+
   const sampleTool: ServerToolInfo = {
     name: 'add-numbers',
     description: 'Add two numbers',

@@ -139,24 +139,24 @@ function applyDefaults(meta: ToolSchemaInfo, args?: ToolArguments): ToolArgument
     return args;
   }
 
-  const result: Record<string, unknown> = isPlainObject(args) ? { ...(args as Record<string, unknown>) } : {};
+  const result = new Map(Object.entries(isPlainObject(args) ? args : {}));
 
   for (const [key, value] of Object.entries(propertiesRaw as Record<string, unknown>)) {
     if (
       value &&
       typeof value === 'object' &&
       'default' in (value as Record<string, unknown>) &&
-      result[key] === undefined
+      result.get(key) === undefined
     ) {
-      result[key] = (value as Record<string, unknown>).default as unknown;
+      result.set(key, (value as Record<string, unknown>).default);
     }
   }
 
-  if (Object.keys(result).length === 0 && !isPlainObject(args)) {
+  if (result.size === 0 && !isPlainObject(args)) {
     return args;
   }
 
-  return result as ToolArguments;
+  return Object.fromEntries(result);
 }
 
 // validateRequired ensures all schema-required fields are present before invocation.
@@ -167,7 +167,7 @@ function validateRequired(meta: ToolSchemaInfo, args?: ToolArguments): void {
   if (!isPlainObject(args)) {
     throw new Error(`Missing required arguments: ${meta.requiredKeys.join(', ')}`);
   }
-  const missing = meta.requiredKeys.filter((key) => (args as Record<string, unknown>)[key] === undefined);
+  const missing = meta.requiredKeys.filter((key) => !Object.hasOwn(args, key) || args[key] === undefined);
   if (missing.length > 0) {
     throw new Error(`Missing required arguments: ${missing.join(', ')}`);
   }
@@ -326,7 +326,7 @@ export function createServerProxy(
       toolAliasMap.set(mapperAlias, key);
     }
     if (cacheSchemas && definitionForCache && isPlainObject(schemaRaw)) {
-      persistedSchemas.set(canonical, schemaRaw as Record<string, unknown>);
+      persistedSchemas.set(key, schemaRaw);
     }
   }
 
@@ -408,8 +408,8 @@ export function createServerProxy(
         }
 
         const positional: unknown[] = [];
-        const argsAccumulator: Record<string, unknown> = {};
-        const optionsAccumulator: ToolCallOptions = {};
+        const argsAccumulator = Object.create(null) as Record<string, unknown>;
+        const optionsAccumulator = Object.create(null) as ToolCallOptions;
 
         for (const arg of callArgs) {
           if (isPlainObject(arg)) {
@@ -447,20 +447,15 @@ export function createServerProxy(
           }
 
           if (positional.length > 0) {
-            const baseArgs = isPlainObject(combinedArgs) ? { ...(combinedArgs as Record<string, unknown>) } : {};
-            positional.forEach((value, idx) => {
-              const key = schema.orderedKeys[idx];
-              if (key) {
-                baseArgs[key] = value;
-              }
-            });
-            combinedArgs = baseArgs as ToolArguments;
+            combinedArgs = Object.fromEntries([
+              ...Object.entries(isPlainObject(combinedArgs) ? combinedArgs : {}),
+              ...schema.orderedKeys.slice(0, positional.length).map((key, index) => [key, positional[index]]),
+            ]);
           }
 
           if (Object.keys(argsAccumulator).length > 0) {
             const baseArgs = isPlainObject(combinedArgs) ? { ...(combinedArgs as Record<string, unknown>) } : {};
-            Object.assign(baseArgs, argsAccumulator);
-            combinedArgs = baseArgs as ToolArguments;
+            combinedArgs = { ...baseArgs, ...argsAccumulator };
           }
 
           if (combinedArgs !== undefined) {
@@ -479,8 +474,7 @@ export function createServerProxy(
           }
           if (Object.keys(argsAccumulator).length > 0) {
             const baseArgs = isPlainObject(combinedArgs) ? { ...(combinedArgs as Record<string, unknown>) } : {};
-            Object.assign(baseArgs, argsAccumulator);
-            combinedArgs = baseArgs as ToolArguments;
+            combinedArgs = { ...baseArgs, ...argsAccumulator };
           }
         }
 
