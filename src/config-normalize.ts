@@ -20,8 +20,7 @@ export function normalizeServerEntry(
   sources: readonly ServerSource[],
   context: { env?: NodeJS.ProcessEnv; home?: string } = {}
 ): ServerDefinition {
-  const resolvedRaw = resolveConfigEnvPlaceholders(name, raw, context.env);
-  raw = resolvedRaw;
+  raw = resolveConfigEnvPlaceholders(name, raw, context.env);
   const description = raw.description;
   const env = raw.env ? { ...raw.env } : undefined;
   const auth = normalizeAuth(raw.auth);
@@ -38,7 +37,7 @@ export function normalizeServerEntry(
   const oauthClientMetadataUrl = raw.oauthClientMetadataUrl ?? raw.oauth_client_metadata_url ?? undefined;
   const oauthScope = raw.oauthScope ?? raw.oauth_scope ?? undefined;
   const refresh = normalizeRefresh(raw.refresh);
-  const httpFetch = normalizeHttpFetch(raw.httpFetch ?? raw.http_fetch);
+  const httpFetch = raw.httpFetch ?? raw.http_fetch;
   const oauthCommandRaw = raw.oauthCommand ?? raw.oauth_command;
   const oauthCommand = oauthCommandRaw ? { args: [...oauthCommandRaw.args] } : undefined;
   const headers = buildHeaders(raw);
@@ -186,10 +185,6 @@ function normalizeRefresh(raw: RawRefresh | undefined): RefreshableBearerOptions
     refreshSkewSeconds: raw?.refreshSkewSeconds ?? raw?.refresh_skew_seconds,
     accessTokenEnv: raw?.accessTokenEnv ?? raw?.access_token_env,
   };
-}
-
-function normalizeHttpFetch(value: 'default' | 'node-http1' | undefined): 'default' | 'node-http1' | undefined {
-  return value;
 }
 
 function normalizePath(input: string | undefined, home?: string): string | undefined {

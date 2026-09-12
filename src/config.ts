@@ -82,17 +82,12 @@ async function buildServerDefinitions(layers: ConfigLayer[], rootDir: string): P
       const source: ServerSource = { kind: 'local', path: layer.path };
       const parsed = RawEntrySchema.parse(entryRaw);
       const existing = merged.get(name);
-      // Local definitions win; stash any prior imports after the local path
-      if (existing) {
-        const sources = [source, ...existing.sources];
-        merged.set(name, { raw: parsed, baseDir: path.dirname(layer.path), source, sources });
-        continue;
-      }
+      // Local definitions win; stash any prior imports after the local path.
       merged.set(name, {
         raw: parsed,
         baseDir: path.dirname(layer.path),
         source,
-        sources: [source],
+        sources: [source, ...(existing?.sources ?? [])],
       });
     }
   }

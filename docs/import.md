@@ -11,11 +11,11 @@ mcporter merges your local `config/mcporter.json` with editor- or tool-specific 
 
 ## Import Pipeline
 
-1. `config/mcporter.json` is loaded first (or the file passed to `--config`). If it includes an `"imports"` array, that array defines the exact order we follow. If the array is omitted, we use the default order `["cursor", "claude-code", "claude-desktop", "codex", "windsurf", "opencode", "vscode"]`.
-2. For each import kind, we probe the project-relative path (e.g., `.cursor/mcp.json`) and then the per-user path. The first readable file is parsed and converted into mcporter’s normalized schema. Names collide on a “first wins” basis—once an imported name is merged, later imports with the same name are ignored unless the local config defines an override.
+1. Each resolved home or project config layer supplies its own imports (an explicit `--config` selects only that file). A non-empty `"imports"` array puts those kinds first, followed by any omitted defaults. Without the array, the order is `["cursor", "claude-code", "claude-desktop", "codex", "windsurf", "opencode", "vscode"]`.
+2. For each import kind, we read its candidate paths in order, starting with project-relative paths when supported. Every readable file contributes entries. Names collide on a “first wins” basis—once an imported name is merged, later imports with the same name are ignored unless the local config defines an override.
 3. Finally, any servers declared inside `mcpServers` take precedence over imports regardless of the order above.
 
-Set `"imports": []` when you want to disable auto-merging entirely, or supply a subset (for example `["cursor", "codex"]`) to reduce the latency of `mcporter list`.
+Set `"imports": []` to disable imports for that config layer. A non-empty subset (for example `["cursor", "codex"]`) changes priority; it does not restrict discovery to those kinds.
 
 ## Supported Formats
 
@@ -51,8 +51,8 @@ Set `"imports": []` when you want to disable auto-merging entirely, or supply a 
 
 ## Verifying & Troubleshooting
 
-- Run `mcporter list --source import --json` (or pipe through `rg '"source":'`) to confirm the resolved file for each imported server.
-- Use `mcporter list --source import` to limit the output to merged definitions when you’re debugging precedence or verifying first-wins behavior.
+- Run `mcporter config list --source import --json` to inspect imported definitions without contacting servers.
+- Use `mcporter list --verbose` to inspect effective servers and their configuration sources, including local overrides.
 - If a server is defined in multiple tools (e.g., Cursor and OpenCode), the first import in the list wins. Reorder `"imports"` or copy the entry locally via `mcporter config import <kind> --copy` to break ties.
 - When debugging OpenCode, remember that `OPENCODE_CONFIG` beats every other path. Clearing or overriding that env var is often the fastest way to validate changes.
 - When tests need deterministic data, follow `tests/config-imports.test.ts`—it copies fixtures into a fake home directory and asserts the merged server order. Mirror that pattern when adding new import kinds.

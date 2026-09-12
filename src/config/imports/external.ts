@@ -3,8 +3,9 @@ import path from 'node:path';
 import { parse as parseToml } from '@iarna/toml';
 import type { ImportKind, RawEntry } from '../../config-schema.js';
 import { RawEntrySchema } from '../../config-schema.js';
+import { pathExistsAsync } from '../path-discovery.js';
 import { normalizeProjectPath, pathsEqual } from './paths-utils.js';
-import { fileExists, isRecord, parseJsonBuffer } from './shared.js';
+import { isRecord, parseJsonBuffer } from './shared.js';
 
 interface ReadExternalEntryOptions {
   readonly projectRoot?: string;
@@ -15,7 +16,7 @@ export async function readExternalEntries(
   filePath: string,
   options: ReadExternalEntryOptions = {}
 ): Promise<Map<string, RawEntry> | null> {
-  if (!(await fileExists(filePath))) {
+  if (!(await pathExistsAsync(filePath))) {
     return null;
   }
 
@@ -126,46 +127,14 @@ function convertExternalEntry(value: Record<string, unknown>): RawEntry | null {
     result.tokenCacheDir = tokenCacheDir;
   }
 
-  const clientName = asString(value.clientName ?? value.client_name);
-  if (clientName) {
-    result.clientName = clientName;
-  }
-  const protocolVersion = asString(value.protocolVersion ?? value.protocol_version);
-  if (protocolVersion) {
-    result.protocolVersion = protocolVersion;
-  }
-
-  const oauthClientId = asString(value.oauthClientId ?? value.oauth_client_id);
-  if (oauthClientId) {
-    result.oauthClientId = oauthClientId;
-  }
-
-  const oauthClientSecret = asString(value.oauthClientSecret ?? value.oauth_client_secret);
-  if (oauthClientSecret) {
-    result.oauthClientSecret = oauthClientSecret;
-  }
-
-  const oauthClientSecretEnv = asString(value.oauthClientSecretEnv ?? value.oauth_client_secret_env);
-  if (oauthClientSecretEnv) {
-    result.oauthClientSecretEnv = oauthClientSecretEnv;
-  }
-
-  const oauthTokenEndpointAuthMethod = asString(
-    value.oauthTokenEndpointAuthMethod ?? value.oauth_token_endpoint_auth_method
-  );
-  if (oauthTokenEndpointAuthMethod) {
-    result.oauthTokenEndpointAuthMethod = oauthTokenEndpointAuthMethod;
-  }
-
-  const oauthClientMetadataUrl = asString(value.oauthClientMetadataUrl ?? value.oauth_client_metadata_url);
-  if (oauthClientMetadataUrl) {
-    result.oauthClientMetadataUrl = oauthClientMetadataUrl;
-  }
-
-  const httpFetch = asString(value.httpFetch ?? value.http_fetch);
-  if (httpFetch) {
-    result.httpFetch = httpFetch;
-  }
+  copyString(value, result, 'clientName', 'client_name');
+  copyString(value, result, 'protocolVersion', 'protocol_version');
+  copyString(value, result, 'oauthClientId', 'oauth_client_id');
+  copyString(value, result, 'oauthClientSecret', 'oauth_client_secret');
+  copyString(value, result, 'oauthClientSecretEnv', 'oauth_client_secret_env');
+  copyString(value, result, 'oauthTokenEndpointAuthMethod', 'oauth_token_endpoint_auth_method');
+  copyString(value, result, 'oauthClientMetadataUrl', 'oauth_client_metadata_url');
+  copyString(value, result, 'httpFetch', 'http_fetch');
 
   const refresh = asRefresh(value.refresh);
   if (refresh) {
